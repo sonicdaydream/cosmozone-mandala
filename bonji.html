@@ -3,19 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>コスモゾーン — 無限入れ子曼荼羅</title>
-<meta name="description" content="潜っても浮上しても終わらない、無限にズームする曼荼羅。指でなぞって奥へ潜る、音と映像が連動したジェネラティブ・アート。">
-<link rel="canonical" href="https://cosmozone-mandala.vercel.app/">
-<link rel="alternate" hreflang="ja" href="https://cosmozone-mandala.vercel.app/">
+<title>コスモゾーン・種子 — 無限入れ子曼荼羅</title>
+<meta name="description" content="五智如来の種子（梵字）が幾重にも入れ子になった、無限に潜れる曼荼羅。指でなぞって奥へ潜る、音と映像が連動したジェネラティブ・アート。">
+<link rel="canonical" href="https://cosmozone-mandala.vercel.app/bonji">
+<link rel="alternate" hreflang="ja" href="https://cosmozone-mandala.vercel.app/bonji">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="コスモゾーン">
-<meta property="og:title" content="コスモゾーン — 無限入れ子曼荼羅">
-<meta property="og:description" content="潜っても浮上しても終わらない、無限にズームする曼荼羅。指でなぞって奥へ潜る、音と映像が連動したジェネラティブ・アート。">
+<meta property="og:title" content="コスモゾーン・種子 — 無限入れ子曼荼羅">
+<meta property="og:description" content="五智如来の種子（梵字）が幾重にも入れ子になった、無限に潜れる曼荼羅。">
 <meta property="og:image" content="https://cosmozone-mandala.vercel.app/og.png">
-<meta property="og:url" content="https://cosmozone-mandala.vercel.app/">
+<meta property="og:url" content="https://cosmozone-mandala.vercel.app/bonji">
 <meta name="twitter:card" content="summary_large_image">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Siddham&display=swap">
 <link rel="stylesheet" href="/css/mandala.css">
 </head>
 <body>
@@ -31,11 +34,18 @@
 
 <div id="hint">画面を時計回りになぞると潜る　反時計回りで浮上</div>
 
+<button id="btnNames">尊名</button>
 <nav id="verNav" aria-label="バージョン切り替え">
   <a href="/" data-m="abstract">抽象</a>
   <a href="/bonji" data-m="bonji">梵字</a>
   <a href="/butsu" data-m="butsu">尊像</a>
 </nav>
+<div id="warn" hidden></div>
+<div id="legend" hidden>
+  <h2>五智如来の種子</h2>
+  <ul id="legendList"></ul>
+  <p id="fontNote"></p>
+</div>
 
 <div id="recordPanel" hidden>
   <button id="btnShareLink">リンクを共有</button>
@@ -53,7 +63,7 @@
   <div id="speedWrap"><span>速さ</span><input type="range" id="speed" min="4" max="80" value="29"></div>
 </div>
 
-<script>window.MANDALA_CONFIG = { mode: 'abstract' };</script>
+<script>window.MANDALA_CONFIG = { mode: 'bonji' };</script>
 <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
 <script defer src="/_vercel/insights/script.js"></script>
 <script defer src="/_vercel/speed-insights/script.js"></script>

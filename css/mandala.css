@@ -1,0 +1,126 @@
+:root{
+  --gold:#d9b25a;
+  --ink:#efeae0;
+  --void:#07060c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--void)}
+body{
+  font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+canvas{position:fixed;inset:0;display:block;width:100%;height:100%}
+
+/* ─ 尺度の梯子 ─ */
+#ladder{
+  position:fixed;right:0;top:0;bottom:0;width:118px;
+  pointer-events:none;
+  display:flex;align-items:center;justify-content:flex-end;
+  padding-right:10px;
+}
+#ladderInner{position:relative;height:76%;width:100%}
+#ladderInner .rail{
+  position:absolute;right:6px;top:0;bottom:0;width:1px;
+  background:linear-gradient(to bottom,transparent,rgba(217,178,90,.45) 12%,rgba(217,178,90,.45) 88%,transparent);
+}
+.tick{position:absolute;right:6px;transform:translateY(-50%);display:flex;align-items:center;gap:6px;flex-direction:row-reverse}
+.tick i{display:block;width:9px;height:1px;background:rgba(217,178,90,.55)}
+.tick span{font-size:10.5px;line-height:1;color:rgba(239,234,224,.42);letter-spacing:.06em;white-space:nowrap}
+#marker{position:absolute;right:1px;transform:translateY(-50%);transition:none}
+#marker::before{
+  content:"";display:block;width:0;height:0;
+  border-top:5px solid transparent;border-bottom:5px solid transparent;
+  border-right:8px solid var(--gold);
+}
+
+/* ─ 現在地 ─ */
+#hud{
+  position:fixed;left:20px;bottom:calc(env(safe-area-inset-bottom,0px) + 94px);
+  line-height:1.35;text-shadow:0 1px 12px rgba(0,0,0,.9);
+}
+#hud .val{font-size:26px;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+#hud .name{font-size:13px;color:rgba(239,234,224,.62);margin-top:5px;letter-spacing:.14em}
+#hud .layer{font-size:11px;color:rgba(217,178,90,.75);margin-top:3px;letter-spacing:.1em;font-variant-numeric:tabular-nums}
+
+/* ─ 操作 ─ */
+#bar{
+  position:fixed;left:0;right:0;bottom:0;
+  padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px);
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  background:linear-gradient(to top,rgba(7,6,12,.92),rgba(7,6,12,0));
+}
+button{
+  font:inherit;font-size:13px;color:var(--ink);
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(217,178,90,.32);
+  border-radius:2px;padding:8px 13px;cursor:pointer;
+  letter-spacing:.08em;white-space:nowrap;
+}
+button:active{background:rgba(217,178,90,.2)}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+#speedWrap{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:11px;color:rgba(239,234,224,.5)}
+input[type=range]{width:104px;accent-color:var(--gold);background:transparent}
+#hint{
+  position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 22px);
+  text-align:center;font-size:12px;letter-spacing:.16em;color:rgba(239,234,224,.5);
+  pointer-events:none;transition:opacity 1.2s ease;
+}
+@media (max-width:430px){
+  #hud .val{font-size:22px}
+  #hud{bottom:calc(env(safe-area-inset-bottom,0px) + 116px)}
+  #ladder{width:100px}
+  .tick span{font-size:9.5px}
+  button{font-size:12px;padding:7px 10px;letter-spacing:.04em}
+  input[type=range]{width:78px}
+  #speedWrap{font-size:10px;gap:6px}
+}
+@media (prefers-reduced-motion:reduce){
+  #hint{transition:none}
+}
+
+#btnNames{position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 14px);z-index:6}
+#warn{
+  position:fixed;left:14px;right:14px;top:calc(env(safe-area-inset-top,0px) + 58px);
+  font-size:11px;line-height:1.6;color:rgba(239,234,224,.55);
+  text-align:center;pointer-events:none;transition:opacity 1.2s ease;
+}
+#legend{
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(350px,89vw);max-height:78vh;overflow:auto;z-index:12;
+  background:rgba(10,8,16,.965);border:1px solid rgba(217,178,90,.42);
+  padding:20px 20px 16px;
+}
+#legend h2{font-size:13px;font-weight:400;letter-spacing:.2em;color:var(--gold);margin-bottom:12px}
+#legend ul{list-style:none}
+#legend li{display:flex;align-items:center;gap:13px;padding:10px 0;border-top:1px solid rgba(217,178,90,.15)}
+#legend .glyph{
+  font-family:"Noto Sans Siddham",serif;font-size:30px;line-height:1.15;
+  color:var(--gold);min-width:60px;text-align:center;
+}
+#legend .who{font-size:13px;line-height:1.5}
+#legend .who small{display:block;font-size:10.5px;color:rgba(239,234,224,.5);margin-top:3px;letter-spacing:.05em}
+#fontNote{margin-top:15px;font-size:10.5px;line-height:1.7;color:rgba(239,234,224,.42)}
+
+/* ─ バージョン切り替え ─ */
+#verNav{
+  position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 56px);z-index:6;
+  display:flex;gap:10px;font-size:11px;letter-spacing:.08em;
+}
+#verNav a{color:rgba(239,234,224,.42);text-decoration:none;padding:3px 1px;border-bottom:1px solid transparent}
+#verNav a.current{color:var(--gold);border-bottom-color:rgba(217,178,90,.55)}
+body.mode-abstract #verNav{top:calc(env(safe-area-inset-top,0px) + 14px)}
+
+/* ─ 記録パネル ─ */
+#recordPanel{
+  position:fixed;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 58px);
+  max-width:340px;margin:0 auto;z-index:11;
+  background:rgba(10,8,16,.965);border:1px solid rgba(217,178,90,.42);
+  padding:12px;display:flex;flex-direction:column;gap:8px;
+}
+#recordPanel button{width:100%;text-align:left}
+#recordStatus{font-size:11px;color:rgba(239,234,224,.6);min-height:1.4em;letter-spacing:.04em}
+#recordPanel[hidden]{display:none}
