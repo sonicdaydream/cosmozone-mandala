@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cosmozone-mandala.vercel.app/sitemap.xml

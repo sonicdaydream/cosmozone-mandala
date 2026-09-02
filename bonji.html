@@ -4,6 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>コスモゾーン・梵字 — 無限入れ子曼荼羅</title>
+<meta name="description" content="無限に入れ子になった曼荼羅を指でなぞって奥へ潜っていくジェネレーティブアート。各層の中尊を悉曇(梵字)の種子で表した梵字版。">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://cosmozone-mandala.vercel.app/bonji.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="コスモゾーン・梵字 — 無限入れ子曼荼羅">
+<meta property="og:description" content="無限に入れ子になった曼荼羅を指でなぞって奥へ潜っていくジェネレーティブアート。各層の中尊を悉曇(梵字)の種子で表した梵字版。">
+<meta property="og:url" content="https://cosmozone-mandala.vercel.app/bonji.html">
+<meta property="og:image" content="https://cosmozone-mandala.vercel.app/api/og?v=2&amp;t=yakou&amp;u=5&amp;s=7&amp;mode=bonji">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="1200">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="コスモゾーン・梵字 — 無限入れ子曼荼羅">
+<meta name="twitter:description" content="無限に入れ子になった曼荼羅を指でなぞって奥へ潜っていくジェネレーティブアート。各層の中尊を悉曇(梵字)の種子で表した梵字版。">
+<meta name="twitter:image" content="https://cosmozone-mandala.vercel.app/api/og?v=2&amp;t=yakou&amp;u=5&amp;s=7&amp;mode=bonji">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VisualArtwork","name":"コスモゾーン・梵字 — 無限入れ子曼荼羅","description":"無限に入れ子になった曼荼羅を指でなぞって奥へ潜っていくジェネレーティブアート。各層の中尊を悉曇(梵字)の種子で表した梵字版。","url":"https://cosmozone-mandala.vercel.app/bonji.html","image":"https://cosmozone-mandala.vercel.app/api/og?v=2&t=yakou&u=5&s=7&mode=bonji","artform":"Generative art","isPartOf":{"@type":"CreativeWorkSeries","name":"コスモゾーン","hasPart":[{"@type":"VisualArtwork","name":"コスモゾーン・種子","url":"https://cosmozone-mandala.vercel.app/"},{"@type":"VisualArtwork","name":"コスモゾーン・仏","url":"https://cosmozone-mandala.vercel.app/butsu.html"}]}}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Siddham&display=swap">
@@ -89,7 +106,21 @@
     #hint{transition:none}
   }
 
+  .vh{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   #btnNames{position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 14px);z-index:6}
+  #verNav{
+    position:fixed;right:126px;top:calc(env(safe-area-inset-top,0px) + 52px);z-index:6;
+    display:flex;gap:6px;font-size:11px;letter-spacing:.06em;
+  }
+  #verNav a{
+    color:rgba(239,234,224,.55);text-decoration:none;
+    border:1px solid rgba(217,178,90,.25);border-radius:2px;padding:6px 9px;
+    background:rgba(255,255,255,.04);
+  }
+  #verNav a[aria-current]{color:var(--gold);border-color:rgba(217,178,90,.6)}
+  @media (max-width:430px){
+    #verNav{right:auto;left:14px;top:calc(env(safe-area-inset-top,0px) + 90px)}
+  }
   #warn{
     position:fixed;left:14px;right:14px;top:calc(env(safe-area-inset-top,0px) + 58px);
     font-size:11px;line-height:1.6;color:rgba(239,234,224,.55);
@@ -114,7 +145,16 @@
 </style>
 </head>
 <body>
+<h1 class="vh">コスモゾーン・梵字 — 無限入れ子曼荼羅</h1>
+<p class="vh">無限に入れ子になった曼荼羅を指でなぞって奥へ潜っていくジェネレーティブアート。各層の中尊をすべて悉曇(梵字)の種子で表した梵字版。</p>
+<noscript>このページはJavaScriptで曼荼羅を描画するジェネレーティブアートです。表示するにはJavaScriptを有効にしてください。混合版は<a href="/">コスモゾーン・種子</a>、仏像のみの版は<a href="/butsu.html">コスモゾーン・仏</a>をご覧ください。</noscript>
 <canvas id="c"></canvas>
+
+<nav id="verNav" aria-label="バージョン">
+  <a href="/">種子</a>
+  <a href="/butsu.html">仏</a>
+  <a href="/bonji.html" aria-current="page">梵字</a>
+</nav>
 
 <div id="ladder"><div id="ladderInner"><div class="rail"></div><div id="marker"></div></div></div>
 
