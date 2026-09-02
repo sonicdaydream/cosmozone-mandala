@@ -669,8 +669,37 @@ function pigmentAt(i, seed, theme) {
     const h0 = hues[base % ns], h1 = hues[(base + 1) % ns];
     return { h0, h1, h2: h0, h3: h1, s: satBase };
   }
-  const pi0 = (((i + seed) % ns) + ns) % ns;
-  return { h0: hues[pi0], h1: hues[(pi0 + 2) % ns], h2: hues[(pi0 + 3) % ns], h3: hues[(pi0 + 1) % ns], s: satBase };
+  // cycle: 8層の区間内でパレットの隣り合う色相へゆるやかに補間する（区間境界で次の色相へ）
+  const layer = Math.floor(wrapI(i));
+  const sec = Math.floor((layer - U_MIN) / 8);
+  const t = (layer - U_MIN - sec * 8) / 8;
+  const pi0 = (((sec + seed) % ns) + ns) % ns;
+  const pi1 = (pi0 + 1) % ns;
+  const lerpHue = (a, b, f) => { const d = ((b - a + 540) % 360) - 180; return ((a + d * f) % 360 + 360) % 360; };
+  const h0 = lerpHue(hues[pi0], hues[pi1], t);
+  return { h0, h1: (h0 + 140) % 360, h2: (h0 + 250) % 360, h3: (h0 + 70) % 360, s: satBase };
+}
+
+/* モチーフの「選択」は数層まとまった連（ラン）単位で安定させ、唐突な切り替わりを避ける。
+   ラン内の描画の細部（各モチーフ関数に渡す rnd）は層ごとに変えて微妙な差を出す。 */
+const runTableCache = new Map();
+function runTableFor(seed) {
+  let t = runTableCache.get(seed);
+  if (t) return t;
+  t = new Array(PERIOD);
+  const rnd = mulberry32(hash32(0x9E3779B1 ^ seed));
+  let idx = 0, runId = 0;
+  while (idx < PERIOD) {
+    const len = Math.min(2 + Math.floor(rnd() * 3), PERIOD - idx); // 2〜4層で1つの連
+    for (let k = 0; k < len; k++) t[idx + k] = runId;
+    idx += len; runId++;
+  }
+  runTableCache.set(seed, t);
+  return t;
+}
+function runIndexOf(i, seed) {
+  const layer = Math.floor(wrapI(i));
+  return runTableFor(seed)[layer - U_MIN];
 }
 function pickMotifKeys(pool, nSym, rnd, maxBudget) {
   const state = { remaining: maxBudget };
@@ -793,8 +822,9 @@ function paintOctaveV2(makeCanvas, S, i, seed, mode, forcedTheme) {
   const layer = Math.floor(wrapI(i));
   const tint = SECTION_TINT[sectionOf(layer)];
   const pig = pigmentAt(i, seed, theme);
+  const motifRnd = mulberry32(hash32((runIndexOf(i, seed) * 2654435761) ^ seed ^ 0x4D6F7469));
 
-  const nSym = [6, 8, 8, 12, 12, 16][Math.floor(rnd() * 6)];
+  const nSym = [6, 8, 8, 12, 12, 16][Math.floor(motifRnd() * 6)];
   const C = {
     n: nSym,
     gold: theme.metal,
@@ -840,7 +870,7 @@ function paintOctaveV2(makeCanvas, S, i, seed, mode, forcedTheme) {
 
   const e = [1, 1.42, 2.30, 3.10, 4].map(x => x * RIN);
   const budget = Math.round((dense ? 6 : 2) * theme.density);
-  const [k0, k2, k3] = pickMotifKeys(theme.pool, nSym, rnd, budget);
+  const [k0, k2, k3] = pickMotifKeys(theme.pool, nSym, motifRnd, budget);
 
   const paintRing = (key, r0, r1) => {
     const m = MOTIFS[key] || MOTIFS.star;
