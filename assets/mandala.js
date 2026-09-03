@@ -604,18 +604,18 @@ function groundFlower(g, RIN, R, C) {
 
 /* ---------- モチーフ登録簿（STYLESPEC 2-1） ---------- */
 const MOTIFS = {
-  lotus: { fn: bandInnerLotus, kind: 'org', cost: 2, clip: false },
-  palace: { fn: bandPalace, kind: 'geo', cost: 2, clip: true },
-  flame: { fn: bandFlame, kind: 'org', cost: 2, clip: false },
-  cloud: { fn: bandCloud, kind: 'org', cost: 2, clip: true },
-  vajra: { fn: bandVajra, kind: 'geo', cost: 1, clip: false },
-  jewel: { fn: bandJewel, kind: 'org', cost: 2, clip: false },
-  star: { fn: bandStar, kind: 'geo', cost: 1, clip: false, nOK: [8, 10, 12, 16, 20, 24] },
-  seigaiha: { fn: bandSeigaiha, kind: 'geo', cost: 1, clip: true },
-  sayagata: { fn: bandSayagata, kind: 'geo', cost: 2, clip: true },
-  truchet: { fn: bandTruchet, kind: 'geo', cost: 2, clip: true },
-  braid: { fn: bandBraid, kind: 'geo', cost: 3, clip: true },
-  sierpin: { fn: bandSierpin, kind: 'geo', cost: 2, clip: false }
+  lotus: { fn: bandInnerLotus, kind: 'org', cost: 2, clip: false, label: '蓮弁' },
+  palace: { fn: bandPalace, kind: 'geo', cost: 2, clip: true, label: '楼閣' },
+  flame: { fn: bandFlame, kind: 'org', cost: 2, clip: false, label: '火焔' },
+  cloud: { fn: bandCloud, kind: 'org', cost: 2, clip: true, label: '雲' },
+  vajra: { fn: bandVajra, kind: 'geo', cost: 1, clip: false, label: '金剛杵' },
+  jewel: { fn: bandJewel, kind: 'org', cost: 2, clip: false, label: '宝珠' },
+  star: { fn: bandStar, kind: 'geo', cost: 1, clip: false, nOK: [8, 10, 12, 16, 20, 24], label: '星形' },
+  seigaiha: { fn: bandSeigaiha, kind: 'geo', cost: 1, clip: true, label: '青海波' },
+  sayagata: { fn: bandSayagata, kind: 'geo', cost: 2, clip: true, label: '紗綾形' },
+  truchet: { fn: bandTruchet, kind: 'geo', cost: 2, clip: true, label: '迷路' },
+  braid: { fn: bandBraid, kind: 'geo', cost: 3, clip: true, label: '組紐' },
+  sierpin: { fn: bandSierpin, kind: 'geo', cost: 2, clip: false, label: '三角' }
 };
 
 /* ---------- 配色テーマ（STYLESPEC 3-1） ---------- */
@@ -730,6 +730,76 @@ function pickMotifKeys(pool, nSym, rnd, maxBudget) {
   return keys;
 }
 
+/* その層が「何になるか」を描画せずに求める。paintOctaveV2 もこれを使うので、
+   図鑑の記録と実際に描かれる絵が食い違うことはない。 */
+function describeLayer(i, seed, forcedTheme, dense) {
+  const themeKey = themeKeyFor(i, seed, forcedTheme);
+  const theme = STYLES[themeKey];
+  const motifRnd = mulberry32(hash32((runIndexOf(i, seed) * 2654435761) ^ seed ^ 0x4D6F7469));
+  const n = [6, 8, 8, 12, 12, 16][Math.floor(motifRnd() * 6)];
+  const budget = Math.round((dense ? 6 : 2) * theme.density);
+  const motifs = pickMotifKeys(theme.pool, n, motifRnd, budget);
+  return { theme: themeKey, motifs, n };
+}
+
+/* 図鑑で集めうる「様式 × モチーフ」の全組み合わせ */
+function codexAllPairs() {
+  const pairs = [];
+  for (const t of STYLE_KEYS) {
+    for (const m of STYLES[t].pool) {
+      if (MOTIFS[m]) pairs.push(t + ':' + m);
+    }
+  }
+  return pairs;
+}
+
+/* 図鑑の保存。localStorage が使えない環境（プライベートモード等）でも
+   その場かぎりの記録として動き続ける。 */
+const CODEX_KEY = 'cosmozone.codex.v1';
+function makeCodex(storage) {
+  let store = null;
+  try { store = storage !== undefined ? storage : window.localStorage; } catch (e) { store = null; }
+  let data = { v: 1, pairs: {} };
+  try {
+    const raw = store && store.getItem(CODEX_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.pairs) data = { v: 1, pairs: parsed.pairs };
+    }
+  } catch (e) { /* 壊れていたら空から始める */ }
+
+  function persist() {
+    try { if (store) store.setItem(CODEX_KEY, JSON.stringify(data)); } catch (e) { /* 容量超過等は無視 */ }
+  }
+  return {
+    /* 記録して、新規に見つかった組み合わせだけを返す */
+    record(themeKey, motifs, at) {
+      const found = [];
+      for (const m of motifs) {
+        const key = themeKey + ':' + m;
+        if (!MOTIFS[m] || data.pairs[key]) continue;
+        data.pairs[key] = at === undefined ? Date.now() : at;
+        found.push(key);
+      }
+      if (found.length) persist();
+      return found;
+    },
+    has(key) { return !!data.pairs[key]; },
+    count() { return Object.keys(data.pairs).length; },
+    total() { return codexAllPairs().length; }
+  };
+}
+
+/* 日替わりの種（JSTの日付から決まる。同じ日は世界中で同じ曼荼羅） */
+function dailyKey(now) {
+  const jst = new Date((now === undefined ? Date.now() : now) + 9 * 3600 * 1000);
+  return jst.toISOString().slice(0, 10);
+}
+function dailySeed(now) {
+  const key = dailyKey(now);
+  return hash32(parseInt(key.replace(/-/g, ''), 10)) & 0x3fffffff;
+}
+
 /* ---------- v1: 元のアルゴリズムをそのまま（過去の共有リンク互換） ---------- */
 function ringColorsV1(S, i, seed, rnd) {
   const lw = Math.max(1, S / 620);
@@ -823,14 +893,14 @@ function paintOctaveV2(makeCanvas, S, i, seed, mode, forcedTheme) {
   const rnd = mulberry32(hash32((i * 2654435761) ^ seed));
   const lw = Math.max(1, S / 620);
   const dense = S >= 1200;
-  const themeKey = themeKeyFor(i, seed, forcedTheme);
+  const desc = describeLayer(i, seed, forcedTheme, dense);
+  const themeKey = desc.theme;
   const theme = STYLES[themeKey];
   const layer = Math.floor(wrapI(i));
   const tint = SECTION_TINT[sectionOf(layer)];
   const pig = pigmentAt(i, seed, theme);
-  const motifRnd = mulberry32(hash32((runIndexOf(i, seed) * 2654435761) ^ seed ^ 0x4D6F7469));
 
-  const nSym = [6, 8, 8, 12, 12, 16][Math.floor(motifRnd() * 6)];
+  const nSym = desc.n;
   const C = {
     n: nSym,
     gold: theme.metal,
@@ -875,8 +945,7 @@ function paintOctaveV2(makeCanvas, S, i, seed, mode, forcedTheme) {
   }
 
   const e = [1, 1.42, 2.30, 3.10, 4].map(x => x * RIN);
-  const budget = Math.round((dense ? 6 : 2) * theme.density);
-  const [k0, k2, k3] = pickMotifKeys(theme.pool, nSym, motifRnd, budget);
+  const [k0, k2, k3] = desc.motifs;
 
   const paintRing = (key, r0, r1) => {
     const m = MOTIFS[key] || MOTIFS.star;
@@ -912,7 +981,7 @@ function paintOctaveV2(makeCanvas, S, i, seed, mode, forcedTheme) {
   g.beginPath(); g.arc(0, 0, RIN * 1.07, 0, Math.PI * 2); g.stroke();
   g.globalAlpha = 1;
 
-  return { canvas: cvs, theme: themeKey };
+  return { canvas: cvs, theme: themeKey, motifs: desc.motifs, n: nSym };
 }
 
 function paintOctave(makeCanvas, opts) {
@@ -931,7 +1000,10 @@ function runApp(config) {
   const mode = config.mode || 'mixed'; // 'mixed' | 'butsu' | 'bonji'
 
   const qs = new URLSearchParams(location.search);
-  let V = qs.get('v') === '2' ? 2 : (qs.has('sheet') && !qs.has('v') ? 2 : 1);
+  /* v の既定：s / u を持つURLは v2 以前に配った共有リンクとみなして v1 のまま開く。
+     何も付いていない普通の訪問は、現行版である v2 で開く。 */
+  const legacyLink = qs.has('s') || qs.has('u');
+  let V = qs.get('v') === '2' ? 2 : (qs.get('v') === '1' ? 1 : (legacyLink ? 1 : 2));
   let forcedTheme = qs.has('t') && STYLES[qs.get('t')] ? qs.get('t') : null;
 
   const cv = document.getElementById('c');
@@ -959,11 +1031,15 @@ function runApp(config) {
   };
 
   let u = 0, laps = 0;
-  let seed = (Math.random() * 1e9) | 0;
+  /* 種を指定されていなければ「今日の曼荼羅」。同じ日に訪れた人は同じ絵を見る。 */
+  let isDaily = true;
+  let seed = dailySeed();
   const qSeed = parseInt(qs.get('s'), 10);
-  if (!isNaN(qSeed)) seed = qSeed;
+  if (!isNaN(qSeed)) { seed = qSeed; isDaily = (seed === dailySeed()); }
   const qU = parseFloat(qs.get('u'));
   if (!isNaN(qU)) u = wrapU(qU);
+
+  const codex = makeCodex();
 
   let playing = true, dir = 1;
   let speed = 1 / (32 * (60 / 138 / 4));
@@ -1078,6 +1154,95 @@ function runApp(config) {
       inner.appendChild(d);
     }
   })();
+
+  /* ---------- 今日の曼荼羅 と 図鑑 ---------- */
+  (function injectStyles() {
+    const s = document.createElement('style');
+    s.textContent = [
+      '#seedTag{font-size:11px;color:rgba(217,178,90,.65);margin-top:4px;letter-spacing:.1em}',
+      '#codex{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);',
+      'width:min(420px,92vw);max-height:80vh;overflow:auto;z-index:12;',
+      'background:rgba(10,8,16,.97);border:1px solid rgba(217,178,90,.42);padding:20px}',
+      '#codex h2{font-size:13px;font-weight:400;letter-spacing:.2em;color:#d9b25a;margin:0 0 4px}',
+      '#codex .tally{font-size:11px;color:rgba(239,234,224,.5);margin-bottom:14px;letter-spacing:.08em;',
+      'font-variant-numeric:tabular-nums}',
+      '#codex .row{padding:9px 0;border-top:1px solid rgba(217,178,90,.15)}',
+      '#codex .rowName{font-size:12px;color:rgba(239,234,224,.75);letter-spacing:.12em;margin-bottom:6px}',
+      '#codex .cells{display:flex;flex-wrap:wrap;gap:5px}',
+      '#codex .cell{font-size:11px;padding:4px 8px;border:1px solid rgba(217,178,90,.18);border-radius:2px;',
+      'color:rgba(239,234,224,.28);letter-spacing:.06em}',
+      '#codex .cell.got{color:#d9b25a;border-color:rgba(217,178,90,.55);background:rgba(217,178,90,.08)}',
+      '#codex .note{margin-top:15px;font-size:10.5px;line-height:1.7;color:rgba(239,234,224,.42)}',
+      /* HUD の真上に置く。中央の絵と重ならず、HUD の行数が変わってもずれない */
+      '#codexToast{position:absolute;left:0;bottom:100%;margin-bottom:10px;white-space:nowrap;',
+      'font-size:11.5px;letter-spacing:.1em;color:rgba(217,178,90,.9);',
+      'pointer-events:none;opacity:0;transition:opacity .7s ease;text-shadow:0 1px 10px rgba(0,0,0,.95)}',
+      '#codexToast.show{opacity:1}'
+    ].join('');
+    document.head.appendChild(s);
+  })();
+
+  const seedTag = document.createElement('div');
+  seedTag.id = 'seedTag';
+  document.getElementById('hud').appendChild(seedTag);
+  function updateSeedTag() {
+    if (isDaily) {
+      const d = dailyKey().split('-');
+      seedTag.textContent = '今日の曼荼羅 · ' + Number(d[1]) + '月' + Number(d[2]) + '日';
+    } else {
+      seedTag.textContent = '任意の曼荼羅 · ' + seed;
+    }
+  }
+  updateSeedTag();
+
+  const codexToast = document.createElement('div');
+  codexToast.id = 'codexToast';
+  document.getElementById('hud').appendChild(codexToast);
+  let toastTimer = null;
+  function showToast(text) {
+    codexToast.textContent = text;
+    codexToast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => codexToast.classList.remove('show'), 2600);
+  }
+
+  const codexPanel = document.createElement('div');
+  codexPanel.id = 'codex';
+  codexPanel.hidden = true;
+  codexPanel.onclick = () => { codexPanel.hidden = true; };
+  document.body.appendChild(codexPanel);
+  function buildCodex() {
+    const parts = ['<h2>曼荼羅図鑑</h2>',
+      '<div class="tally">' + codex.count() + ' / ' + codex.total() + '</div>'];
+    for (const t of STYLE_KEYS) {
+      const cells = STYLES[t].pool.filter(m => MOTIFS[m]).map(m =>
+        '<span class="cell' + (codex.has(t + ':' + m) ? ' got' : '') + '">' + MOTIFS[m].label + '</span>');
+      parts.push('<div class="row"><div class="rowName">' + STYLES[t].label + '</div>' +
+        '<div class="cells">' + cells.join('') + '</div></div>');
+    }
+    parts.push('<p class="note">潜っているあいだに通り過ぎた「様式 × 文様」が記録されます。' +
+      'この記録はこの端末にだけ残ります。</p>');
+    codexPanel.innerHTML = parts.join('');
+  }
+
+  /* 画面を占めている層（i が u に最も近い層）を図鑑に記録する */
+  let lastRecorded = null;
+  function recordCurrentLayer() {
+    if (V !== 2) return;
+    const i = wrapI(Math.round(u));
+    if (i === lastRecorded) return;
+    lastRecorded = i;
+    const desc = describeLayer(i, seed, forcedTheme, HI >= 1200);
+    const found = codex.record(desc.theme, desc.motifs);
+    if (!found.length) return;
+    const names = found.map(k => {
+      const [t, m] = k.split(':');
+      return STYLES[t].label + ' × ' + MOTIFS[m].label;
+    });
+    showToast('図鑑に記録　' + names.slice(0, 2).join('　') +
+      (names.length > 2 ? '　他' + (names.length - 2) + '件' : ''));
+    if (!codexPanel.hidden) buildCodex();
+  }
 
   /* ---------- 音（既存アルゴリズムを流用、モード非依存） ---------- */
   const OCT_PER_LAYER = Math.log2(K);
@@ -1359,7 +1524,13 @@ function runApp(config) {
   const btnDir = document.getElementById('btnDir');
   btnPlay.onclick = () => { playing = !playing; btnPlay.textContent = playing ? '停止' : '再生'; };
   btnDir.onclick = () => { dir = -dir; btnDir.textContent = dir > 0 ? '外へ出る' : '内へ潜る'; };
-  document.getElementById('btnSeed').onclick = () => { seed = (Math.random() * 1e9) | 0; clearCache(); };
+  document.getElementById('btnSeed').onclick = () => {
+    seed = (Math.random() * 1e9) | 0;
+    isDaily = false;
+    lastRecorded = null;
+    updateSeedTag();
+    clearCache();
+  };
 
   const btnSound = document.getElementById('btnSound');
   btnSound.onclick = () => {
@@ -1420,6 +1591,15 @@ function runApp(config) {
     btnStyle.textContent = styleLabel();
   };
   bar.insertBefore(btnStyle, speedWrap);
+
+  const btnCodex = document.createElement('button');
+  btnCodex.id = 'btnCodex';
+  btnCodex.textContent = '図鑑';
+  btnCodex.onclick = () => {
+    if (codexPanel.hidden) { buildCodex(); codexPanel.hidden = false; }
+    else codexPanel.hidden = true;
+  };
+  bar.insertBefore(btnCodex, speedWrap);
 
   const btnShare = document.createElement('button');
   btnShare.id = 'btnShare';
@@ -1627,6 +1807,7 @@ function runApp(config) {
     const fl = Math.floor(u);
     if (lastGateLayer === null) lastGateLayer = fl;
     else if (fl !== lastGateLayer) { onGate(fl); lastGateLayer = fl; }
+    recordCurrentLayer();
     if ((audioTick++ & 1) === 0) updateAudio();
 
     prune(u);
@@ -1639,7 +1820,8 @@ function runApp(config) {
 return {
   K, U_MIN, U_MAX, PERIOD, wrapU, wrapI, hash32, mulberry32,
   MOTIFS, STYLES, STYLE_KEYS, sectionOf, SECTION_TINT,
-  themeKeyFor, paintOctave, setBonjiReady, runApp
+  themeKeyFor, paintOctave, setBonjiReady, runApp,
+  describeLayer, codexAllPairs, makeCodex, dailyKey, dailySeed
 };
 
 });
