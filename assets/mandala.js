@@ -23,6 +23,12 @@ const PERIOD = U_MAX - U_MIN; // 120
 const wrapU = x => ((x - U_MIN) % PERIOD + PERIOD) % PERIOD + U_MIN;
 const wrapI = i => ((i - U_MIN) % PERIOD + PERIOD) % PERIOD + U_MIN;
 
+/* 層の出現フェード（i-u が小さいほど支配的）。FADE_AGE_START で透明、
+   FADE_AGE_END で不透明になる。差を広く取るほど、次の層の模様がゆっくり
+   溶け込むように現れ、切り替わりの唐突さが和らぐ。 */
+const FADE_AGE_START = 2.6;
+const FADE_AGE_END = 0.9;
+
 function hash32(x) {
   x |= 0;
   x = Math.imul(x ^ (x >>> 16), 2246822507);
@@ -1594,7 +1600,14 @@ function runApp(config) {
       if (!tex) continue;
       ctx.save();
       ctx.translate(W / 2, H / 2);
-      ctx.globalAlpha = Math.max(0, Math.min(1, (outer - 2.2) / 26));
+      // 層の若さ（i-u、支配的になるまでの残り深さ）に基づく緩やかなフェードイン。
+      // ピクセルサイズではなく潜り込む深さで溶け込ませることで、模様の切り替わりが
+      // 唐突に見えないようにする（＝簡易的なクロスフェード・モーフィング）。
+      const age = i - u;
+      let a = (FADE_AGE_START - age) / (FADE_AGE_START - FADE_AGE_END);
+      a = Math.max(0, Math.min(1, a));
+      a = a * a * (3 - 2 * a);
+      ctx.globalAlpha = a;
       ctx.drawImage(tex, -outer, -outer, outer * 2, outer * 2);
       ctx.restore();
     }
